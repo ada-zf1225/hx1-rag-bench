@@ -127,10 +127,35 @@ def run(
     output_dir: Path = typer.Option(Path("results/evaluations"), help="Output dir"),
     max_samples: int | None = typer.Option(None, help="Override dataset.max_samples"),
 ) -> None:
-    """End-to-end RAG eval on a dataset (stub — implemented in pipeline.runner)."""
+    """End-to-end RAG eval on a dataset."""
     _setup_logging()
-    console.print(f"[yellow]TODO[/yellow]: run pipeline with config={config}")
-    console.print("Will be implemented in src/hx1_rag_bench/pipeline/runner.py")
+    from hx1_rag_bench.config import AppConfig
+    from hx1_rag_bench.pipeline.runner import run_eval
+
+    cfg = AppConfig.from_yaml(config)
+    if max_samples is not None:
+        cfg.dataset.max_samples = max_samples
+
+    console.rule(
+        f"[bold cyan]RAG eval: "
+        f"{cfg.dataset.name} | {cfg.retriever.backend} | {cfg.model.name}"
+        f"[/bold cyan]"
+    )
+    report = run_eval(cfg, output_dir=output_dir)
+
+    table = Table(title="Aggregate metrics", show_header=True, header_style="bold cyan")
+    table.add_column("Metric")
+    table.add_column("Value", justify="right")
+    table.add_row("N samples", str(report.n_samples))
+    table.add_row("EM", f"{report.em:.4f}")
+    table.add_row("F1", f"{report.f1:.4f}")
+    for k in sorted(report.recall_at_k):
+        table.add_row(f"Recall@{k}", f"{report.recall_at_k[k]:.4f}")
+    table.add_row("Generate (s)", f"{report.timing['generate_s']:.1f}")
+    table.add_row("Throughput (tok/s)", f"{report.timing['throughput_tok_per_s']:.0f}")
+    table.add_row("Total (s)", f"{report.timing['total_s']:.1f}")
+    console.print(table)
+    console.print(f"\n[dim]Run dir:[/dim] [cyan]{report.run_dir}[/cyan]")
 
 
 @bench_app.command("latency")

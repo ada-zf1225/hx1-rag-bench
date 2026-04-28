@@ -1,0 +1,25 @@
+# First end-to-end RAG eval: BM25 + Qwen2.5-7B-Instruct + MuSiQue (validation, 100 samples).
+# Run with:
+#   rag-bench run --config configs/qwen25_7b_bm25_musique.yaml
+# Override sample count for quick iteration:
+#   rag-bench run --config configs/qwen25_7b_bm25_musique.yaml --max-samples 20
+
+model:
+  name: Qwen/Qwen2.5-7B-Instruct
+  gpu_memory_utilization: 0.85
+  max_tokens: 64           # short-form QA answer
+  temperature: 0.0         # deterministic for EM/F1 reproducibility
+  enable_prefix_caching: true
+
+retriever:
+  backend: bm25
+  top_k: 5
+
+dataset:
+  name: musique
+  split: validation
+  max_samples: 100
+  cache_dir: data/raw
+
+eval:
+  metrics: [em, f1, recall_at_k]
