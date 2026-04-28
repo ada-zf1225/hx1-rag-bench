@@ -42,14 +42,28 @@ class Retriever(ABC):
     ) -> list[RetrievalResult]:
         """Return top-k sentences for `query`, restricted to `sample_id`'s corpus."""
 
-    @abstractmethod
     def save(self, path: Path) -> None:
-        """Persist the index to disk."""
+        """Persist the index to disk. Override if applicable.
+
+        Default raises — useful for composite retrievers (e.g. Hybrid RRF)
+        whose persistence is per sub-retriever and decided by the caller.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__}.save() not implemented; persist sub-retrievers individually"
+        )
 
     @classmethod
-    @abstractmethod
     def load(cls, path: Path) -> Retriever:
-        """Reconstruct a retriever from a previously-saved index."""
+        """Reconstruct a retriever from a previously-saved index. Override if applicable."""
+        raise NotImplementedError(f"{cls.__name__}.load() not implemented")
+
+    def release(self) -> None:
+        """Release any GPU resources (model weights, embeddings buffers).
+
+        No-op by default. GPU-backed retrievers (e.g. dense embedders) should
+        override to free the encoder before downstream stages (vLLM) load.
+        """
+        return None
 
 
 __all__ = ["RetrievalResult", "Retriever"]

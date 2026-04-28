@@ -32,7 +32,13 @@ from hx1_rag_bench.data import load_dataset
 from hx1_rag_bench.eval.metrics import compute_em, compute_f1, compute_recall_at_k
 from hx1_rag_bench.inference.engine import VLLMEngine
 from hx1_rag_bench.inference.prompts import build_rag_messages
-from hx1_rag_bench.retrieval import BM25Retriever, RetrievalResult, Retriever
+from hx1_rag_bench.retrieval import (
+    BGEM3Retriever,
+    BM25Retriever,
+    HybridRRFRetriever,
+    RetrievalResult,
+    Retriever,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -55,10 +61,28 @@ class EvalReport:
 def _make_retriever(cfg: RetrieverConfig) -> Retriever:
     if cfg.backend == "bm25":
         return BM25Retriever()
-    raise NotImplementedError(
-        f"Retriever backend {cfg.backend!r} not yet implemented "
-        "(M4 will add bge_m3 / hybrid_rrf)."
-    )
+    if cfg.backend == "bge_m3":
+        return BGEM3Retriever(
+            model_name=cfg.bge_model,
+            batch_size=cfg.bge_batch_size,
+            max_length=cfg.bge_max_length,
+            use_fp16=cfg.bge_use_fp16,
+        )
+    if cfg.backend == "hybrid_rrf":
+        return HybridRRFRetriever(
+            sub_retrievers=[
+                BM25Retriever(),
+                BGEM3Retriever(
+                    model_name=cfg.bge_model,
+                    batch_size=cfg.bge_batch_size,
+                    max_length=cfg.bge_max_length,
+                    use_fp16=cfg.bge_use_fp16,
+                ),
+            ],
+            weights=cfg.rrf_weights,
+            k=cfg.rrf_k,
+        )
+    raise NotImplementedError(f"Retriever backend {cfg.backend!r} not implemented")
 
 
 def _format_run_id(cfg: AppConfig) -> str:
@@ -139,7 +163,7 @@ def run_eval(
     run_dir.mkdir(parents=True, exist_ok=True)
     logger.info("Run dir: %s", run_dir)
 
-    # --- Phase A: data + retrieval (CPU) -----------------------------------
+    # --- Phase A: data + retrieval (CPU; BGE-M3 / Hybrid touch GPU here) --
     samples = load_dataset(
         cfg.dataset.name,
         split=cfg.dataset.split,
@@ -164,6 +188,10 @@ def run_eval(
         "Indexed in %.2fs, retrieved top-%d for %d queries in %.2fs",
         t_index, top_k, len(samples), t_retrieve,
     )
+
+    # Free any retriever-side GPU memory (e.g. BGE-M3 encoder) before the LLM
+    # claims its share of the device. No-op for CPU-only retrievers.
+    retriever.release()
 
     # --- Phase B: load engine + format prompts (needs tokenizer) -----------
     engine = VLLMEngine(cfg.model)
