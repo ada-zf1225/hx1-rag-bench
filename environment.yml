@@ -1,0 +1,12 @@
+name: rag-bench
+channels:
+  - conda-forge
+  - nvidia
+dependencies:
+  - python=3.11
+  - pip
+  - cuda-toolkit=12.4
+  - pytorch=2.5.*
+  - pytorch-cuda=12.4
+  - pip:
+    - -e .[dev,viz]

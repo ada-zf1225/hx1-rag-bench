@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Data & models
+data/raw/**
+data/processed/**
+data/indexes/**
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/indexes/.gitkeep
+results/benchmarks/**
+results/evaluations/**
+results/logs/**
+!results/**/.gitkeep
+*.bin
+*.safetensors
+*.gguf
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_meta
+
+# Caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+
+# Env files
+.env
+.env.local
+
+# vLLM / HF caches
+.cache/
+
+# PBS outputs
+*.o[0-9]*
+*.e[0-9]*
