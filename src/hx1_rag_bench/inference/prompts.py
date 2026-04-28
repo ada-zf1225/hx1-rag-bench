@@ -14,10 +14,15 @@ class ChatMessage(TypedDict):
 
 
 SYSTEM_RAG = (
-    "You are a precise QA assistant. Use the provided context documents "
-    "to answer the question. If the answer cannot be found in the context, "
-    "respond with 'unanswerable'. Keep the answer as short as possible — "
-    "ideally a single entity or short phrase."
+    "You are a precise multi-hop QA assistant. The context contains several "
+    "candidate passages — some are supporting evidence, others are distractors. "
+    "Read all of them and synthesize across passages when the answer requires "
+    "chaining facts from multiple sources.\n\n"
+    "Output ONLY the final answer as a short factual phrase: a name, entity, "
+    "number, or date. Do NOT output explanations, reasoning, prefixes like "
+    "'The answer is', full sentences, or quotation marks. Always commit to a "
+    "best-guess answer based on the context — never say 'unanswerable' or "
+    "'unknown'."
 )
 
 SYSTEM_NO_CONTEXT = (
